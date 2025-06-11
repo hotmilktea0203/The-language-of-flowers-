@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>The Language of Flowers</title>
+  <!-- Google Fonts -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Spectral:ital,wght@0,400;0,600;1,300&family=Great+Vibes&display=swap"
+    rel="stylesheet"/>
+  <style>
+    /* ===== RESET & BASE ===== */
+    * { margin:0; padding:0; box-sizing:border-box; scroll-behavior:smooth; }
+    html,body { background:#0e0c0d; color:#fef9f6; font-family:'Spectral',serif; overflow-x:hidden; }
+    img,svg { display:block; max-width:100%; height:auto; }
+    a,button { text-decoration:none; color:inherit; background:none; border:none; cursor:pointer; }
+
+    /* ===== GLOBAL OVERLAY & CURSOR ===== */
+    body::before {
+      content:""; position:fixed; inset:0;
+      background:url('faint_petal_texture.png') center/cover no-repeat;
+      opacity:.08; pointer-events:none; z-index:-1;
+    }
+    body { cursor:url('petal_cursor.cur'),auto; }
+
+    /* ===== SIDEBAR NAV ===== */
+    .side-nav {
+      position:fixed; top:50%; left:20px; transform:translateY(-50%);
+      display:flex; flex-direction:column; gap:12px; z-index:1000;
+      opacity: 1;
+      transition: opacity .5s ease;
+    }
+    .side-nav.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .side-nav.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s ease;
+    }
+    .side-nav a {
+      padding:10px 16px; background:rgba(255,236,241,0.85);
+      font-family:'Cinzel Decorative',serif; font-size:.9rem; color:#2a0c15;
+      border-radius:20px; box-shadow:0 4px 10px rgba(0,0,0,0.2);
+      transition:transform .2s, background .2s;
+    }
+    .side-nav a.active,
+    .side-nav a:hover {
+      background:rgba(255,236,241,0.95);
+      transform:translateX(6px) scale(1.05);
+      box-shadow:0 6px 14px rgba(0,0,0,0.3);
+    }
+
+    /* ===== FALLING PETALS ===== */
+    .petal {
+      position:absolute; top:-10%; width:30px; height:30px;
+      background:url('petal_particle.png') no-repeat center/contain;
+      opacity:.7; pointer-events:none; animation:fall 20s linear infinite;
+    }
+    @keyframes fall {
+      0%   { transform:translateY(-10vh) rotate(0) scale(.6); opacity:.8 }
+      100% { transform:translateY(110vh) rotate(360deg) scale(1.2); opacity:.2 }
+    }
+
+    /* ===== REVEAL ON SCROLL ===== */
+    .reveal {
+      opacity:0; transform:translateY(30px);
+      transition:opacity .6s ease, transform .6s ease;
+    }
+    .reveal.visible {
+      opacity:1; transform:translateY(0);
+    }
+
+    /* ===== PARALLAX HELPERS ===== */
+    header.hero, .emotion-bg {
+      background-attachment: fixed;
+    }
+
+    /* ===== HERO SECTION ===== */
+    header.hero {
+      position:relative;
+      
+      overflow:visible;
+      display:flex; align-items:center;
+      padding:0 10vw;
+      height:auto; min-height:100vh;
+      background:
+        linear-gradient(180deg,rgba(0,0,0,0.25),rgba(0,0,0,0.65)),
+        url('herobackground.png') center/contain no-repeat;
+      background-blend-mode:lighten;
+    }
+    header.hero::before {
+      content:""; position:absolute; inset:0;
+      background:rgba(0,0,0,0.4); backdrop-filter:brightness(.7);
+      z-index:1;
+    }
+    .hero-content { position:relative; z-index:2; max-width:720px; }
+    .hero-content h2 {
+      font-family:'Cinzel Decorative',serif;
+      font-size:6vw; line-height:1.1; color:#fff0f0; margin-bottom:20px;
+      text-shadow:0 12px 40px rgba(0,0,0,0.45);
+      animation:glow 2s ease-in-out infinite alternate;
+    }
+    .hero-content p {
+      font-family:'Spectral',serif; font-size:1.3rem; font-style:italic;
+      color:#f0e4df; line-height:1.5; margin-bottom:40px;
+    }
+    .scroll-indicator {
+      display:inline-flex; align-items:center; font-family:'Great Vibes',cursive;
+      font-size:1.2rem; color:#fff; padding:12px 32px;
+      background:rgba(255,236,241,0.5); border:2px solid rgba(255,236,241,0.7);
+      border-radius:60px; backdrop-filter:blur(6px);
+      box-shadow:0 10px 30px rgba(255,200,220,0.4);
+      z-index:2; transition:all .3s;
+    }
+    .scroll-indicator span { margin-right:8px; }
+    .scroll-indicator:hover {
+      background:rgba(255,236,241,0.9);
+      transform:translateY(-2px) scale(1.05);
+      color:#2a0c15;
+    }
+    .button-flower-png {
+      width:1.2em; margin-left:8px;
+      filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    }
+    @keyframes glow {
+      from { text-shadow:0 12px 40px rgba(255,180,200,0.8) }
+      to   { text-shadow:0 12px 60px rgba(255,100,150,1) }
+    }
+
+    /* ===== INTRO + TIMELINE BACKDROP ===== */
+    .intro-timeline-wrapper {
+      background: url('introhistory.png') center top/cover no-repeat;
+     
+      background-attachment: scroll;
+    }
+
+    /* ===== INTRO SECTION ===== */
+    section.intro {
+      position:relative; min-height:75vh;
+      display:flex; align-items:center; justify-content:center;
+      padding:180px 5vw 60px; overflow:hidden;
+    }
+    section.intro::before {
+      content:""; position:absolute; inset:0;
+      background:
+        radial-gradient(circle at center,transparent,rgba(0,0,0,0.25)),
+        rgba(0,0,0,0.25);
+      z-index:1;
+    }
+    .intro-card {
+      position:relative; z-index:2;
+      background:rgba(255,255,255,0.12); backdrop-filter:blur(12px) saturate(160%);
+      border:1px solid rgba(255,255,255,0.2);
+      box-shadow:0 16px 48px rgba(0,0,0,0.5),inset 0 0 80px rgba(255,255,255,0.05);
+      color:#fdf9f8; width:70%; max-width:800px; padding:48px 24px 64px;
+      border-radius:20px; text-align:center; margin-bottom:-20px;
+    }
+    /* Hover-Activated Gradient Overlay */
+    .intro-card {
+      position:relative; overflow:hidden;
+    }
+    .intro-card::after {
+      content: "";
+      position: absolute; inset: 0;
+      /* subtle light overlay instead of dark */
+      background: rgba(255, 255, 255, 0.05);
+      opacity: 0;
+      transition: opacity .4s ease;
+      z-index: -1; /* behind text */
+    }
+    .intro-card:hover::after {
+      opacity: 1;
+      /* no change to text brightness */
+    }
+    @keyframes gradientShift {
+      0%{background-position:0 0}
+      100%{background-position:100% 100%}
+    }
+
+    .intro-card h2 {
+      font-family:'Cinzel Decorative',serif;
+      font-size:clamp(2rem,3.5vw,4rem); line-height:1.1; color:#fff8f7;
+      margin-bottom:16px; animation:glow 2.5s ease-in-out infinite alternate .5s;
+    }
+    .intro-card h3 {
+      font-family:'Cinzel Decorative', serif;
+      font-size:1.6rem;
+      letter-spacing:0.05em;
+      color:#ffeef0;
+      margin-bottom:24px;
+      white-space: normal; /* allow wrapping */
+      overflow-wrap: break-word;
+    }
+    .intro-card p {
+      font-family:'Spectral',serif; font-size:1.25rem; font-style:italic;
+      color:#f4e5e6; line-height:1.7; max-width:480px; margin:0 auto 32px;
+      text-shadow:0 1px 6px rgba(0,0,0,0.25);
+    }
+
+    /* ===== TIMELINE SECTION ===== */
+    section.timeline {
+      position:relative; padding:100px 5vw 200px;
+    }
+    section.timeline::before {
+      content:""; position:absolute; inset:0;
+      background:
+        radial-gradient(circle at center,transparent,rgba(0,0,0,0.25)),
+        rgba(0,0,0,0.25);
+      z-index:1;
+    }
+    .timeline-title {
+      position:relative; z-index:2;
+      font-family:'Cinzel Decorative',serif; font-size:3rem; text-align:center;
+      color:#ffe9ed; margin-bottom:80px; text-shadow:0 2px 8px rgba(0,0,0,0.4);
+      opacity:0; transition:opacity .6s ease;
+    }
+    .timeline-title.visible { opacity:1 }
+
+    .timeline-items {
+      position:relative; z-index:2; max-width:1000px; margin:0 auto;
+      display:flex; flex-direction:column; gap:120px;
+    }
+    .timeline-items::before {
+      content:""; position:absolute; left:50%; top:0; bottom:0;
+      width:2px; background:rgba(255,190,209,0.4);
+      transform:translateX(-50%); border-radius:1px;
+    }
+    .timeline-entry { --delay:0s; --tx:0px; }
+    .timeline-entry.left  { --tx:-30px }
+    .timeline-entry.right { --tx:30px }
+    .timeline-entry.reveal {
+      opacity:0; transform:translateX(var(--tx)) translateY(40px);
+      transition:opacity .6s ease, transform .6s ease;
+      transition-delay:var(--delay);
+    }
+    .timeline-entry.reveal.visible {
+      opacity:1; transform:translateX(0) translateY(0);
+    }
+    .timeline-icon {
+      position: relative;
+      flex-shrink: 0;
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,240,245,0.12);
+      box-shadow: 0 0 20px rgba(255,190,209,0.7);
+      transition:transform .3s, box-shadow .3s;
+    }
+    
+    .timeline-icon:hover {
+      transform: scale(1.15);
+      box-shadow: 0 0 32px rgba(255,190,209,0.9);
+    }
+    .timeline-content {
+      position:relative; transform-style:preserve-3d; transition:transform .3s ease;
+      background:rgba(40,30,30,0.2); backdrop-filter:blur(8px);
+      border-radius:16px; padding:20px 28px; max-width:350px;
+      color:#ffe9ed; font-family:'Cinzel Decorative',serif;
+      box-shadow:0 4px 20px rgba(0,0,0,0.4);
+      overflow:hidden;
+    }
+    .timeline-content::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: rgba(255, 255, 255, 0.05);
+      opacity: 0;
+      transition: opacity .4s ease;
+      z-index: -1;
+    }
+    .timeline-content:hover::after {
+      opacity: 1;
+    }
+    .timeline-content h3 { margin-bottom:8px; font-size:1.4rem }
+    .timeline-content p {
+      margin:0; font-family:'Spectral',serif; font-size:1rem;
+      font-style:italic; line-height:1.6; color:#fce6ea;
+    }
+
+    /* ===== EMOTION SECTIONS ===== */
+    section.emotion {
+      position:relative; padding:200px 5vw; min-height:100vh;
+      display:flex; align-items:center; justify-content:center; background:#0e0c0d;
+    }
+    .emotion-bg {
+      position:absolute; inset:0;
+      background-repeat:no-repeat; background-size:contain!important;
+      background-position:center center!important; z-index:1;
+    }
+    section.emotion::before {
+      content:""; position:absolute; inset:0;
+      background: linear-gradient(
+        to bottom,
+        rgba(14,12,13,0.9) 0%,
+        rgba(14,12,13,0) 20%,
+        rgba(14,12,13,0) 80%,
+        rgba(14,12,13,0.9) 100%
+      );
+      z-index:2;
+    }
+    .emotion-content {
+      position:relative; z-index:3; transform-style:preserve-3d; transition:transform .3s ease;
+      background:rgba(255,255,255,0.08); backdrop-filter:blur(12px);
+      border-radius:16px; padding:48px 36px; max-width:600px;
+      text-align:center; box-shadow:0 8px 24px rgba(0,0,0,0.5); overflow:hidden;
+    }
+    .emotion-content::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: rgba(255, 255, 255, 0.05);
+      opacity: 0;
+      transition: opacity .4s ease;
+      z-index: -1;
+    }
+    .emotion-content:hover::after {
+      opacity: 1;
+    }
+    .emotion-content h2 {
+      font-family:'Cinzel Decorative',serif; font-size:3rem; margin-bottom:20px;
+      color:#ffe9ed; text-shadow:0 2px 8px rgba(0,0,0,0.6);
+    }
+    .emotion-content p {
+      font-size:1.25rem; line-height:1.7; color:#f3e5e8; margin-bottom:24px;
+    }
+    .emotion-content blockquote {
+      font-size:1.4rem; font-style:italic; color:#fde4e7;
+      border-left:6px solid #ffbed1; padding-left:20px; margin-top:30px;
+    }
+    #love .emotion-bg {
+      /* Soft pink gradient overlay */
+      background-image:
+        linear-gradient(to bottom, rgba(255,200,200,0.3), rgba(255,150,150,0.3)),
+        url('glass_rose_dark.png');
+      background-blend-mode:overlay;
+    }
+    #longing .emotion-bg {
+      /* Soft blue gradient overlay */
+      background-image:
+        linear-gradient(to bottom, rgba(200,220,255,0.3), rgba(150,180,255,0.3)),
+        url('glass_forgetmenot_dark.png');
+      background-blend-mode:overlay;
+    }
+    #hope .emotion-bg {
+      /* Soft yellow gradient overlay */
+      background-image:
+        linear-gradient(to bottom, rgba(255,240,180,0.3), rgba(255,220,120,0.3)),
+        url('glass_sunflower_dark.png');
+      background-blend-mode:overlay;
+    }
+    #grief .emotion-bg {
+      /* Soft gray gradient overlay */
+      background-image:
+        linear-gradient(to bottom, rgba(240,240,240,0.3), rgba(200,200,200,0.3)),
+        url('glass_lily_dark.png');
+      background-blend-mode:overlay;
+    }
+    #forgiveness .emotion-bg {
+      /* Soft lavender gradient overlay */
+      background-image:
+        linear-gradient(to bottom, rgba(235,210,250,0.3), rgba(200,180,230,0.3)),
+        url('glass_magnolia_dark.png');
+      background-blend-mode:overlay;
+    }
+
+    /* ===== INTERACTIVE ===== */
+    section.interactive {
+      position:relative; padding:160px 5vw; text-align:center;
+      background:
+        linear-gradient(180deg,rgba(255,236,241,0.1),rgba(0,0,0,0.85)),
+        url('bouquet_background_dark.jpg') center/cover no-repeat;
+      background-blend-mode:overlay; overflow:hidden;
+    }
+    section.interactive::before {
+      content:""; position:absolute; inset:0; background:rgba(0,0,0,0.3); z-index:1;
+    }
+    section.interactive h2 {
+      position:relative; z-index:2;
+      font-family:'Cinzel Decorative',serif; font-size:3rem; color:#ffe9ed;
+      margin-bottom:24px; text-shadow:0 2px 8px rgba(0,0,0,0.6);
+    }
+    section.interactive p {
+      position:relative; z-index:2;
+      font-family:'Spectral',serif; font-size:1.2rem; line-height:1.8;
+      max-width:600px; margin:0 auto 40px; color:#f4dadd;
+    }
+    .floating-petal {
+      position:absolute; width:20px; height:20px;
+      background:url('petal_particle.png') no-repeat center/contain;
+      opacity:.2; animation:drift 12s linear infinite;
+    }
+    @keyframes drift {
+      0%   { transform:translate(var(--sx),-10px) scale(.6) }
+      50%  { transform:translate(calc(var(--sx)+50px),50vh) scale(1) }
+      100% { transform:translate(var(--sx),110vh) scale(.6) }
+    }
+    .cta-button {
+      position:relative; z-index:2; display:inline-block;
+      padding:16px 40px; background:#ffccd5; border-radius:36px;
+      font-family:'Cinzel Decorative',serif; font-size:1.1rem; color:#2a0c15;
+      box-shadow:0 10px 28px rgba(0,0,0,0.25);
+      animation:pulseBtn 3s ease-in-out infinite; transition:all .3s;
+    }
+    .cta-button:hover {
+      background:#ffe6ec; transform:translateY(-3px) scale(1.1);
+      box-shadow:0 14px 40px rgba(0,0,0,0.3);
+    }
+    @keyframes pulseBtn {0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+
+    /* ===== BOUQUET MODAL ===== */
+    #modal-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,0.85);
+      display:none; align-items:center; justify-content:center; z-index:2000; backdrop-filter:blur(4px);
+    }
+    #modal {
+      background:#1e1012; border-radius:16px; padding:24px;
+      max-width:500px; width:90%; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.6);
+    }
+    #modal h3 {
+      font-family:'Cinzel Decorative',serif; font-size:2rem; color:#ffd6e0; margin-bottom:16px;
+    }
+    .petal-options {
+      display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-bottom:16px;
+    }
+    .petal-options button {
+      padding:8px 12px; border-radius:20px;
+      background:rgba(255,236,241,0.3); color:#2a0c15;
+      box-shadow:0 4px 10px rgba(0,0,0,0.2); transition:all .3s;
+    }
+    .petal-options button:hover {
+      background:rgba(255,236,241,0.6); transform:translateY(-2px) scale(1.05);
+    }
+    #vase {
+      position:relative; width:200px; height:200px; margin:0 auto 16px;
+      background:url('vase_silhouette.png') center/contain no-repeat;
+    }
+    .petal-drop {
+      position:absolute; width:40px; height:40px;
+      background-size:contain; background-repeat:no-repeat;
+      animation:flyIn .6s ease-out forwards;
+    }
+    @keyframes flyIn { from{opacity:0;transform:translateY(-100px) scale(.5)} to{opacity:1;transform:translateY(0) scale(1)} }
+    #close-modal { margin-top:12px; font-size:1.2rem; color:#ffd6e0 }
+
+    
+    /* ===== FINAL CALL ===== */
+    section.final-call {
+      position:relative; z-index:2; padding:160px 5vw; text-align:center; background:#1a0e10;
+    }
+    section.final-call h2 {
+      font-family:'Cinzel Decorative',serif; font-size:2.8rem; color:#ffe9f0; margin-bottom:24px;
+      text-shadow:0 2px 8px rgba(0,0,0,0.6);
+    }
+    section.final-call p {
+      font-family:'Spectral',serif; font-size:1.2rem; line-height:1.8;
+      max-width:600px; margin:0 auto; color:#f3d6db;
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      background:#0d0607; text-align:center; padding:60px 5vw;
+      font-family:'Spectral',serif; font-size:.9rem; color:#c8bfc1;
+      border-top:1px solid #3a2a2e;
+    }
+    footer p { line-height:1.8; }
+
+    /* ===== RESPONSIVE ===== */
+    @media(max-width:768px){
+      header.hero,section.intro,section.emotion,section.interactive,section.final-call {
+        padding:80px 4vw;
+      }
+      .intro-card,.cta-button { width:90%; margin:0 auto }
+      .intro-card h2,section.interactive h2,section.final-call h2 { font-size:6vw }
+      section.emotion { padding:120px 4vw }
+      .emotion-content { padding:32px 20px; max-width:90% }
+      .emotion-content h2 { font-size:6vw }
+      .emotion-content p,section.interactive p,section.final-call p { font-size:1rem }
+      .timeline-items::before { display:none }
+      .timeline-entry { flex-direction:row; padding-left:60px; gap:16px }
+      .timeline-icon { margin:0 }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- SIDEBAR NAV -->
+  <nav class="side-nav">
+    <a href="#hero" class="active">Hero</a>
+    <a href="#intro">Intro</a>
+    <a href="#timeline">Timeline</a>
+    <a href="#love">Love</a>
+    <a href="#longing">Longing</a>
+    <a href="#hope">Hope</a>
+    <a href="#grief">Grief</a>
+    <a href="#forgiveness">Forgiveness</a>
+    <a href="#interactive">Interactive</a>
+    <a href="#final-call">Final</a>
+  </nav>
+
+  <!-- PETAL PARTICLES SCRIPT -->
+  <script>
+    document.addEventListener("DOMContentLoaded",()=>{
+      for(let i=0;i<30;i++){
+        const p=document.createElement("div"), s=20+Math.random()*30;
+        p.className="petal"; p.style.left=Math.random()*100+"vw";
+        p.style.width=p.style.height=s+"px";
+        p.style.animationDuration=(15+Math.random()*15)+"s";
+        p.style.animationDelay=-Math.random()*20+"s";
+        document.body.appendChild(p);
+      }
+      // SCROLL-SPY & REVEAL
+      const links=[...document.querySelectorAll(".side-nav a")],
+            reveals=[...document.querySelectorAll(".reveal")];
+      const io=new IntersectionObserver(entries=>{
+        entries.forEach(e=>{ // hide sidebar on hero
+          if(e.target.id === 'hero'){ document.querySelector('.side-nav').classList.toggle('hidden', e.isIntersecting); }
+          if(e.isIntersecting){
+            e.target.classList.add("visible");
+            links.forEach(l=>l.classList.remove("active"));
+            document.querySelector(`.side-nav a[href="#${e.target.id}"]`)?.classList.add("active");
+          }
+        });
+      },{threshold:0.3});
+      reveals.forEach(r=>io.observe(r));
+    });
+
+    function scrollToSection(id){
+      document.getElementById(id).scrollIntoView({behavior:"smooth"});
+    }
+    function openModal(){
+      document.getElementById("modal-overlay").style.display="flex";
+    }
+    function closeModal(){
+      document.getElementById("modal-overlay").style.display="none";
+    }
+    function addPetal(e) {
+      const petalMap = {
+        LOVE:'petal_love.png',
+        LONGING:'petal_longing.png',
+        HOPE:'petal_hope.png',
+        GRIEF:'petal_grief.png',
+        FORGIVENESS:'petal_forgive.png'
+      };
+      const flowerMap = {
+        LOVE:'glass_rose_dark.png',
+        LONGING:'glass_forgetmenot_dark.png',
+        HOPE:'glass_sunflower_dark.png',
+        GRIEF:'glass_lily_dark.png',
+        FORGIVENESS:'glass_magnolia_dark.png'
+      };
+      const emotion = e.currentTarget.dataset.emotion;
+      // display selected flower in modal
+      const mf = document.getElementById('modal-flower');
+      mf.src = flowerMap[emotion] || '';
+      mf.style.display = 'block';
+      // drop petal into vase
+      const d = document.createElement('div');
+      d.className = 'petal-drop';
+      d.style.backgroundImage = `url('${petalMap[emotion]}')`;
+      d.style.left = (30 + Math.random() * 40) + '%';
+      document.getElementById('vase').appendChild(d);
+    }
+
+    </script>
+
+  <!-- AMBIENT AUDIO -->
+  <!-- HERO -->
+  <header class="hero reveal" id="hero">
+    <div class="hero-content">
+      <h2>The Language of Flowers</h2>
+      <p>Where each petal unfolds a secret, and emotions bloom without words.</p>
+      <button class="scroll-indicator" onclick="scrollToSection('intro')">
+        <span>Explore</span>
+        <img src="explore_button.png" alt="→" class="button-flower-png"/>
+      </button>
+    </div>
+  </header>
+
+  <!-- INTRO + TIMELINE BACKDROP -->
+  <div class="intro-timeline-wrapper">
+    <!-- INTRO -->
+    <section class="intro reveal" id="intro">
+      <div class="intro-card">
+        <h2>What Is<br/>Floriography?</h2>
+        <h3>The coded language of emotion — whispered in petals.</h3>
+        <p>Floriography—the silent poetry of petals—spoke in blossoms when words fell short. Today, we revive this timeless code as a modern design language: every bloom a symbol, every bouquet a message.</p>
+      </div>
+    </section>
+
+    <!-- TIMELINE -->
+    <section class="timeline reveal" id="timeline">
+      <h2 class="timeline-title">History of Floriography</h2>
+      <div class="timeline-items">
+        <div class="timeline-entry left reveal" style="--delay:0.1s;">
+          <div class="timeline-icon"><img src="ancient_greece_icon.png" alt="Ancient"/></div>
+          <div class="timeline-content">
+            <h3>Ancient Greece</h3>
+            <p>Violets and roses symbolized divine messages in myths, poetry, and ceremony.</p>
+          </div>
+        </div>
+        <div class="timeline-entry right reveal" style="--delay:0.2s;">
+          <div class="timeline-icon"><img src="tulip_icon.png" alt="Tulip"/></div>
+          <div class="timeline-content">
+            <h3>17th Century</h3>
+            <p>Ottoman tulips became emblems of longing and status at Europe’s Tulip Mania.</p>
+          </div>
+        </div>
+        <div class="timeline-entry left reveal" style="--delay:0.3s;">
+          <div class="timeline-icon"><img src="victorian_icon.png" alt="Victorian"/></div>
+          <div class="timeline-content">
+            <h3>Victorian Era</h3>
+            <p>Coded bouquets bloomed with secret meanings under Queen Victoria’s reign.</p>
+          </div>
+        </div>
+        <div class="timeline-entry right reveal" style="--delay:0.4s;">
+          <div class="timeline-icon"><img src="present_icon.png" alt="Modern"/></div>
+          <div class="timeline-content">
+            <h3>Present Day</h3>
+            <p>Designers revive this floral language in modern arrangements and digital art.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- EMOTIONS -->
+  <section class="emotion love reveal" id="love">
+    <div class="emotion-bg"></div>
+    <div class="emotion-content">
+      <h2>LOVE</h2>
+      <p>The red rose stands as the eternal emblem of deep affection—velvety crimson petals conveying passion, devotion, and unwavering commitment.</p>
+      <blockquote>"When words falter, let a rose speak."</blockquote>
+    </div>
+  </section>
+
+  <section class="emotion longing reveal" id="longing">
+    <div class="emotion-bg"></div>
+    <div class="emotion-content">
+      <h2>LONGING</h2>
+      <p>Forget-me-nots whisper across oceans and years—a promise that distance cannot sever and memories forever bloom.</p>
+      <blockquote>"Though apart, our hearts remain entwined."</blockquote>
+    </div>
+  </section>
+
+  <section class="emotion hope reveal" id="hope">
+    <div class="emotion-bg"></div>
+    <div class="emotion-content">
+      <h2>HOPE</h2>
+      <p>Sunflowers turn their golden faces toward the light—an emblem of resilience, faith, and brighter days ahead.</p>
+      <blockquote>"In every sunrise, find the courage to bloom."</blockquote>
+    </div>
+  </section>
+
+  <section class="emotion grief reveal" id="grief">
+    <div class="emotion-bg"></div>
+    <div class="emotion-content">
+      <h2>GRIEF</h2>
+      <p>White lilies offer serene solace in sorrow, pure petals embodying peace, remembrance, and gentle acceptance.</p>
+      <blockquote>"In quiet reflection, memories blossom anew."</blockquote>
+    </div>
+  </section>
+
+  <section class="emotion forgiveness reveal" id="forgiveness">
+    <div class="emotion-bg"></div>
+    <div class="emotion-content">
+      <h2>FORGIVENESS</h2>
+      <p>Magnolias bloom in quiet grace—a noble symbol of release, renewal, and the strength to open one’s heart again.</p>
+      <blockquote>"Release the past, and watch your spirit blossom."</blockquote>
+    </div>
+  </section>
+
+  <!-- INTERACTIVE SECTION -->
+  <section class="interactive reveal" id="interactive">
+    <h2>Build Your Bouquet</h2>
+    <p>Select from Love, Longing, Hope, Grief, or Forgiveness—and we’ll compose a custom arrangement to speak your heart.</p>
+    <button class="cta-button reveal" onclick="openModal()">Begin Your Arrangement →</button>
+    <script>
+      document.addEventListener("DOMContentLoaded",()=>{
+        const sec=document.getElementById("interactive");
+        for(let i=0;i<12;i++){
+          const p=document.createElement("div");
+          p.className="floating-petal";
+          p.style.setProperty("--sx",(Math.random()*120-10)+"vw");
+          p.style.animationDelay=-Math.random()*12+"s";
+          sec.appendChild(p);
+        }
+      });
+    </script>
+  </section>
+
+  <!-- BOUQUET BUILDER MODAL -->
+  <div id="modal-overlay" onclick="closeModal()">
+    <div id="modal" onclick="event.stopPropagation()">
+      <h3>Choose your emotion</h3>
+      <img id="modal-flower" style="max-width:200px; margin:12px auto; display:none;" alt="Selected Emotion Flower"/>
+      <div class="petal-options">
+        <button data-emotion="LOVE" onclick="addPetal(event)">Love</button>
+        <button data-emotion="LONGING" onclick="addPetal(event)">Longing</button>
+        <button data-emotion="HOPE" onclick="addPetal(event)">Hope</button>
+        <button data-emotion="GRIEF" onclick="addPetal(event)">Grief</button>
+        <button data-emotion="FORGIVENESS" onclick="addPetal(event)">Forgiveness</button>
+      </div>
+      <div id="vase"></div>
+      <button id="close-modal" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+
+  <!-- FINAL CALL -->
+  <section class="final-call reveal" id="final-call">
+    <h2>Let Flowers Speak</h2>
+    <p>Thank you for exploring the silent poetry of petals. May your own bouquets bloom with meaning.</p>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>© 2025 The Language of Flowers — A Creative Experience<br/>Designed &amp; Coded by SADAF</p>
+  </footer>
+</body>
+</html>
